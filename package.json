@@ -1,6 +1,6 @@
 {
-  "name": "j-vscode-deepseek-ai",
-  "displayName": "j-vscode-deepseek-ai",
+  "name": "j-vscode-ai",
+  "displayName": "j-vscode-ai",
   "description": "VSCode DeepSeek AI extension",
   "version": "0.0.1",
   "engines": {
@@ -14,9 +14,9 @@
   "contributes": {
     "commands": [
       {
-        "command": "j-vscode-deepseek-ai.startChat",
+        "command": "j-vscode-ai.startChat",
         "title": "Start Chat",
-        "category": "AI"
+        "category": "J-AI"
       }
     ]
   },
