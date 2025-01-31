@@ -1,23 +1,27 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { vscode } from "../vscode";
+import { marked } from 'marked'
+import DOMPurify from 'dompurify'
+import { vscode } from "../vscode"
 
 const prompt = ref('What time is it?')
 const response = ref('...')
 
 const ask = () => {
-    const text = prompt.value;
-    response.value = 'Loading...';
-    vscode.postMessage({ command: 'chat', text })
+  const text = prompt.value;
+  response.value = 'Loading...';
+  vscode.postMessage({ command: 'chat', text })
 }
 
-const onChatResponse = (text: string) => {
-  response.value = text
+const sanitizeString = async (text: string): Promise<string> => DOMPurify.sanitize(await marked.parse(text))
+
+const onChatResponse = async (text: string) => {
+  response.value = await sanitizeString(text)
 }
 
 window.addEventListener('message', event => {
-    const { command, text } = event.data;
-    if (command === 'chatResponse') onChatResponse(text)
+  const { command, text } = event.data;
+  if (command === 'chatResponse') onChatResponse(text)
 });
 </script>
 
