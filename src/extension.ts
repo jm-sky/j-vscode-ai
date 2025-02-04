@@ -7,7 +7,6 @@ const commands = {
 }
 
 export function activate(context: vscode.ExtensionContext) {
-
 	console.log('Congratulations, your extension "j-vscode-ai" is now active!');
 
 	const disposable = vscode.commands.registerCommand(commands.startChat, () => {

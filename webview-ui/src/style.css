@@ -1,3 +1,7 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+think {
+  @apply block my-1 p-2 border border-dotted bg-black/20 opacity-90;
+}

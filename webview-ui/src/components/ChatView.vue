@@ -1,27 +1,65 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
+import { v4 as uuidv4 } from 'uuid'
 import { vscode } from "../vscode"
+import ChatMessage from './ChatMessage.vue'
+import { useKeyModifier } from '@vueuse/core'
 
-const prompt = ref('What time is it?')
-const response = ref('...')
+const isCtrlDown = useKeyModifier('Control')
 
-const ask = () => {
-  const text = prompt.value;
-  response.value = 'Loading...';
+export interface IChatMessage {
+  id: string
+  isAi: boolean
+  content: string
+  date: string
+}
+
+const prompt = ref('Write an example text in markdown.')
+const messages = ref<IChatMessage[]>([])
+
+const createUserMessage = async (text: string): Promise<IChatMessage> => ({
+  id: uuidv4(),
+  isAi: false,
+  content: await sanitizeString(text),
+  date: (new Date()).toISOString(),
+})
+
+const createBotMessage = async (text: string, id?: string): Promise<IChatMessage> => ({
+  id: id ?? uuidv4(),
+  isAi: true,
+  content: await sanitizeString(text),
+  date: (new Date()).toISOString(),
+})
+
+const ask = async () => {
+  const text = prompt.value
+  if (text?.length < 2) return
   vscode.postMessage({ command: 'chat', text })
+  const message = await createUserMessage(text)
+  messages.value.push(message)
+}
+
+const onEnter = () => {
+  if (isCtrlDown.value) ask()
 }
 
 const sanitizeString = async (text: string): Promise<string> => DOMPurify.sanitize(await marked.parse(text))
 
-const onChatResponse = async (text: string) => {
-  response.value = await sanitizeString(text)
+const onChatResponse = async (text: string, id: string) => {
+  const existingMessage = messages.value.find(m => m.id === id)
+  if (existingMessage) {
+    existingMessage.content = text
+  } else {
+    const message = await createBotMessage(text, id)
+    messages.value.push(message)
+  }
 }
 
 window.addEventListener('message', event => {
-  const { command, text } = event.data;
-  if (command === 'chatResponse') onChatResponse(text)
+  const { command, id, text } = event.data;
+  if (command === 'chatResponse') onChatResponse(text, id)
 });
 </script>
 
@@ -34,10 +72,13 @@ window.addEventListener('message', event => {
       rows="3"
       placeholder="Ask something..."
       class="border p-1 rounded w-full bg-gray-800/50"
+      @keydown.enter="onEnter()"
     />
 
     <vscode-button @click="ask()">Ask question</vscode-button>
 
-    <div v-html="response" class="border py-1 px-2 rounded min-h-3 bg-gray-800/50"></div>
+    <div class="grid grid-cols-1 gap-2 border py-1 px-2 rounded min-h-5 bg-gray-800/50">
+      <ChatMessage v-for="message in messages" :key="message.id" :message />
+    </div>
   </div>
 </template>

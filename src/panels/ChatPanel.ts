@@ -1,7 +1,8 @@
-import { window, Disposable, Uri, ViewColumn, Webview, WebviewPanel } from "vscode";
+import { window, Disposable, Uri, ViewColumn, Webview, WebviewPanel } from 'vscode';
 import ollama from 'ollama';
-import { getNonce, getUri } from "../helpers/utils";
-import { AI_MODEL } from "../config";
+import { v4 as uuidv4 } from 'uuid';
+import { getNonce, getUri } from '../helpers/utils';
+import { AI_MODEL } from '../config';
 
 
 export class ChatPanel {
@@ -88,7 +89,7 @@ export class ChatPanel {
   #setWebviewMessageListener(webview: Webview) {
     const onMessage = (message: any) => {
       ChatPanel.#log('[ChatPanel][setWebviewMessageListener][route] command:', message.command)
-      const { command, text } = message
+      const { command, text, id } = message
 
       if (command === 'ready') this.#onAppMounted()
       if (command === 'chat') this.#onChatMessage(text)
@@ -104,6 +105,7 @@ export class ChatPanel {
   async #onChatMessage(userPrompt: string) {
     ChatPanel.#log('[ChatPanel][onChatMessage] userPrompt:', userPrompt)
     let responseText = ''
+    const id = uuidv4()
 
     try {
       const streamResponse = await ollama.chat({
@@ -117,12 +119,14 @@ export class ChatPanel {
         this._panel.webview.postMessage({
           command: 'chatResponse',
           text: responseText,
+          id,
         })
       }
     } catch (err) {
       this._panel.webview.postMessage({
         command: 'chatResponse',
-        text: 'Sorry, error...',
+        text: '*Sorry, error...*',
+        id,
       })
       console.warn(err)
     }
